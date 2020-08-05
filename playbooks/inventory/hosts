@@ -1,0 +1,7 @@
+[libvirt_hosts]
+localhost ansible_connection=local ansible_python_interpreter=/usr/bin/python3
+
+[virtual_machines]
+test1.virt.example.com
+test2.virt.example.com
+test3.virt.example.com

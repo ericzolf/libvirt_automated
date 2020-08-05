@@ -1,0 +1,25 @@
+---
+# tasks file for domain_wipe
+
+- name: gather list of still existing VMs
+  virt:
+    command: list_vms
+  register: virtlist
+  delegate_to: "{{ libvirt_host }}"
+
+- name: destroy/shutdown the existing VM if necessary
+  virt:
+    name: "{{ virt_dom_name }}"
+    state: "{{ virt_dom_state }}"
+  delegate_to: "{{ libvirt_host }}"
+  when: virt_dom_name in virtlist.list_vms
+
+- name: remove the VM if wished (potentially with storage)
+  command: >
+    virsh undefine
+    {% if virt_dom_remove_storage %}--remove-all-storage{% endif %}
+    --domain {{ virt_dom_name }}
+  delegate_to: "{{ libvirt_host }}"
+  when:
+  - virt_dom_name in virtlist.list_vms
+  - virt_dom_undefine | bool

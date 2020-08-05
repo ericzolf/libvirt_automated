@@ -1,0 +1,21 @@
+---
+
+- name: create directory "{{ libvirt_temp_dir }}/{{ virt_dom_title }}" on the libvirt host
+  file:
+    state: directory
+    dest: "{{ libvirt_temp_dir }}/{{ virt_dom_title }}"
+  delegate_to: "{{ libvirt_host }}"
+
+- name: TODO do something nifty about the ISO to copy/pull it
+  debug:
+    msg: for now we assume it's already available at '{{ virt_dom_os_iso }}'
+
+- name: define the full path to the kickstart file
+  set_fact:
+    virt_dom_os_ks_path: "{{ libvirt_temp_dir }}/{{ virt_dom_title }}/{{ virt_dom_os_kickstart | basename }}"
+
+- name: create the kickstart file from the kickstart template
+  template:
+    src: "{{ virt_dom_os_kickstart }}.j2"
+    dest: "{{ virt_dom_os_ks_path }}"
+  delegate_to: "{{ libvirt_host }}"

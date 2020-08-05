@@ -1,0 +1,11 @@
+---
+# example of usage to completely wipe out the domains and their attached storage
+# ansible-playbook -i inventory libvirt_domain_remove.yml -K -l test[23].\* \
+#   -e virt_dom_undefine=true -e virt_dom_remove_storage=true
+- name: remove all virtual machines
+  hosts: virtual_machines
+  gather_facts: false
+  become: true
+  tags: virtual_machines
+  roles:
+  - ericzolf.libvirt_automated.domain_wipe

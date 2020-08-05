@@ -1,0 +1,8 @@
+---
+# vars file for libvirt_setup
+
+# list of packages required for proper libvirt automation
+libvirt_host_packages:
+- libvirt
+- virt-install
+- python3-libvirt

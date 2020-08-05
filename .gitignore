@@ -1,2 +1,6 @@
 # ignore built collection
 *.tar.gz
+
+# backup and working files of vim
+*~
+.*.swp 

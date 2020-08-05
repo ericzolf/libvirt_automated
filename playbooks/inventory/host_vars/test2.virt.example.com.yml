@@ -1,0 +1,4 @@
+---
+# variables file for test2
+virt_dom_description: second example host
+virt_dom_vcpus: 1

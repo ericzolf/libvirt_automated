@@ -1,0 +1,13 @@
+---
+# tasks file for libvirt_setup
+
+- name: install required packages to setup the libvirt host
+  package:
+    name: "{{ libvirt_host_packages }}"
+    state: installed
+
+- name: enable and start libvirtd service
+  service:
+    name: libvirtd
+    enabled: true
+    state: started

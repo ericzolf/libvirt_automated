@@ -1,0 +1,4 @@
+---
+# variables file for test3
+virt_dom_description: third example host
+virt_dom_ram_mb: 2048

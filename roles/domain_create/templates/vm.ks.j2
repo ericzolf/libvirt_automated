@@ -1,0 +1,68 @@
+# Keyboard layouts
+keyboard 'us'
+
+# Root password 
+rootpw --plaintext redhat
+user --groups=wheel --name={{ ansible_user }} --password=redhat --plaintext --gecos="Ansible User"
+
+# System language
+lang en_US
+
+# System timezone
+timezone America/New_York --isUtc
+
+# Use graphical install
+text
+
+# Network information
+network  --bootproto=dhcp --device=eth0
+
+# System authorization information
+auth  --useshadow  --passalgo=sha512
+
+# Firewall configuration
+firewall --enabled
+
+# Use CDROM installation media
+cdrom
+firstboot --disable
+
+# reboot after installation
+reboot
+
+# SELinux configuration
+selinux --enforcing
+
+# System bootloader configuration
+bootloader --location=mbr
+
+# Partition clearing information
+clearpart --all
+
+# Disk partitioning information
+part /boot --fstype="ext4" --size=500
+part /tmp --fstype="ext4" --size=1000
+part / --fstype="ext4" --size=7000
+part swap --fstype="swap" --size=1024
+
+%packages
+#@^gnome-desktop-environment
+@base
+@core
+net-tools
+wget
+%end
+
+%addon com_redhat_kdump --disable --reserve-mb='128'
+%end
+
+# post-install not required for now...
+#%post
+#%end
+
+# not required for test machines
+#%anaconda
+#pwpolicy root --minlen=10 --minquality=1 --notstrict --nochanges --notempty
+#pwpolicy user --minlen=10 --minquality=1 --notstrict --nochanges --notempty
+#pwpolicy luks --minlen=10 --minquality=1 --notstrict --nochanges --notempty
+#%end

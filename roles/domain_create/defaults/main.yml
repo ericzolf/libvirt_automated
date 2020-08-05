@@ -1,0 +1,36 @@
+---
+# defaults file for domain_create
+
+libvirt_connect: "qemu:///system"
+libvirt_host: localhost
+libvirt_type: "kvm"
+libvirt_temp_dir: "/var/tmp/libvirt"
+
+virt_dom_name: "{{ inventory_hostname_short }}"
+virt_dom_title: "{{ inventory_hostname }}"
+virt_dom_description: "default domain description - replace me"
+
+virt_dom_ram_mb: "1024"
+virt_dom_vcpus: "2"
+virt_dom_cpu_type: "host"
+
+virt_dom_disk_size: "10"
+virt_dom_disk_pool: "default"
+virt_dom_disk_bus: "scsi"  # or virtio
+virt_dom_disk_controller: "scsi,model=virtio-scsi"
+
+virt_dom_network_name: "default"
+virt_dom_network_hostif: "eth0"
+virt_dom_network_model: "virtio"
+virt_dom_network_type: "direct"
+virt_dom_network_mac: "52:54:00:af:bb:59"
+
+virt_dom_os_type: "Linux"
+virt_dom_os_variant: "rhel7.5"
+virt_dom_os_iso: "/var/lib/libvirt/images/rhel-server-7.5-x86_64-dvd.iso"
+virt_dom_os_kickstart: "vm.ks" # .j2 will be used as template
+
+# default password for root and Ansible user
+# the idea is to have a temporary password and use a follow-up
+# playbook to set proper security (if at all required)
+virt_dom_default_password: redhat

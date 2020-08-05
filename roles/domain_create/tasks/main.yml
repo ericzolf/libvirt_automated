@@ -1,0 +1,44 @@
+---
+# tasks file for domain_create
+
+- name: gather list of already existing VMs
+  virt:
+    command: list_vms
+  register: virtlist
+  delegate_to: "{{ libvirt_host }}"
+
+- name: prepare iso and kickstart for the VM if necessary
+  import_tasks: virt_prepare.yml
+  when: virt_dom_name not in virtlist.list_vms
+
+- name: create the actual VM using virt-install if necessary
+  import_tasks: virt_install.yml
+  when: virt_dom_name not in virtlist.list_vms
+
+- name: make sure the VM is started (especially if it already existed)
+  virt:
+    name: "{{ virt_dom_name }}"
+    state: running
+  delegate_to: "{{ libvirt_host }}"
+
+- name: gather IP information of the created VM
+  command: virsh --quiet domifaddr {{ virt_dom_name }}
+  changed_when: false
+  register: vir_domifaddr
+  delegate_to: "{{ libvirt_host }}"
+
+- name: extract the IP address of the VM and set ansible_host
+  set_fact:
+    # format is 'vnet0      52:54:00:d8:42:06    ipv4         192.168.122.223/24'
+    ansible_host: "{{ vir_domifaddr.stdout_lines[0].split()[-1] | ipaddr('address') }}"
+
+- name: fail if ansible_host isn't properly defined
+  fail:
+    msg: "Variable ansible_host isn't properly defined"
+  when: not ansible_host
+
+- name: wait for host to be available
+  wait_for_connection:
+  vars:
+    ansible_password: "{{ virt_dom_default_password }}"
+  become: false
