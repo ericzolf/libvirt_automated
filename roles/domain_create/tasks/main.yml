@@ -6,6 +6,7 @@
     command: list_vms
   register: virtlist
   delegate_to: "{{ libvirt_host }}"
+  check_mode: false
 
 - name: prepare iso and kickstart for the VM if necessary
   import_tasks: virt_prepare.yml
@@ -37,8 +38,11 @@
     msg: "Variable ansible_host isn't properly defined"
   when: not ansible_host
 
-- name: wait for host to be available
+- name: wait for host to be available (if libvirt host is localhost)
   wait_for_connection:
   vars:
     ansible_password: "{{ virt_dom_default_password }}"
   become: false
+  when: libvirt_host == "localhost" or libvirt_host == "127.0.0.1"
+  # many VMs might not be reachable from outside the libvirt host,
+  # and hence can't that easily be checked for availability.
