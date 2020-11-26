@@ -1,4 +1,22 @@
 ---
 # variables file for test3
-virt_dom_description: third example host
+virt_dom_description: third example host RHEL 8
 virt_dom_ram_mb: 2048
+virt_dom_disk_size: 50
+
+virt_dom_os_variant: "rhel8.2"
+virt_dom_os_iso: "/var/lib/libvirt/images/rhel-8.2-x86_64-dvd.iso"
+
+virt_dom_os_file_systems:
+- mount: /
+  type: xfs
+  name: Root
+  size: 5120
+  label: ROOTFS
+- mount: /var
+  type: xfs
+  name: Home
+  size: 20480
+  maxsize: "{{ (virt_dom_disk_size | int * 1024 / 2) | int }}"  # we try to keep some disk space free
+  label: VARFS
+  grow: true

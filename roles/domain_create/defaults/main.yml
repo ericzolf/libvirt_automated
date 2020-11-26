@@ -18,6 +18,7 @@ virt_dom_disk_size: "10"
 virt_dom_disk_pool: "default"
 virt_dom_disk_bus: "scsi"  # or virtio
 virt_dom_disk_controller: "scsi,model=virtio-scsi"
+virt_dom_disk_name: "sda"  # vda if virtio
 
 virt_dom_network_name: "default"
 virt_dom_network_hostif: "eth0"
@@ -26,11 +27,33 @@ virt_dom_network_type: "direct"
 virt_dom_network_mac: "52:54:00:af:bb:59"
 
 virt_dom_os_type: "Linux"
-virt_dom_os_variant: "rhel7.5"
-virt_dom_os_iso: "/var/lib/libvirt/images/rhel-server-7.5-x86_64-dvd.iso"
+virt_dom_os_variant: "rhel7.9"
+virt_dom_os_iso: "/var/lib/libvirt/images/rhel-server-7.9-x86_64-dvd.iso"
 virt_dom_os_kickstart: "vm.ks" # .j2 will be used as template
+
+virt_dom_os_hostname: "{{ inventory_hostname }}"
 
 # default password for root and Ansible user
 # the idea is to have a temporary password and use a follow-up
 # playbook to set proper security (if at all required)
-virt_dom_default_password: redhat
+virt_dom_os_password: redhat
+# you might create a crypted password with $ python -c 'import crypt; print(crypt.crypt("My Password"))'
+virt_dom_os_password_crypted: false
+
+# short name to uniquely identify LVM's system PV and VG
+virt_dom_os_fs: rhel
+# list of file systems:
+virt_dom_os_file_systems:
+- mount: /
+  type: xfs
+  name: Root
+  size: 5120
+  label: ROOTFS
+#- mount: /var
+#  type: xfs
+#  name: Home
+#  size: 20480
+#  maxsize: "{{ (virt_dom_disk_size | int * 1024 / 2) | int }}"  # we try to keep some disk space free
+#  label: VARFS
+#  grow: true
+

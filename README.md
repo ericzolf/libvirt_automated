@@ -16,3 +16,11 @@ but the collection already has:
 So that using a proper inventory, you can create (and remove) as many
 VMs on as many hosts as you want, using a proper inventory.
 An example is available under the [playbooks directory](playbooks/).
+
+## Examples
+
+```
+ansible-playbook -i inventory libvirt_domain_create.yml --limit test[12].\* -K
+ansible-playbook -i inventory libvirt_domain_remove.yml --limit test\* \
+	-e virt_dom_undefine=true -e virt_dom_remove_storage=true -K
+```
