@@ -41,8 +41,10 @@
 - name: wait for host to be available (if libvirt host is localhost)
   wait_for_connection:
   vars:
-    ansible_password: "{{ virt_dom_default_password }}"
+    ansible_password: "{{ virt_dom_os_password }}"
   become: false
-  when: libvirt_host == "localhost" or libvirt_host == "127.0.0.1"
+  when:
+  - libvirt_host == "localhost" or libvirt_host == "127.0.0.1"
+  - not virt_dom_os_password_crypted
   # many VMs might not be reachable from outside the libvirt host,
   # and hence can't that easily be checked for availability.
