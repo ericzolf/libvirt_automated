@@ -1,7 +1,7 @@
 ---
 # Example of usage to create all the VMs in the inventory, without
 # setting up again the libvirt host:
-# ansible-playbook -i inventory create_libvirt_domain.yml --tags virtual_machines -K
+# ansible-playbook -i inventory libvirt_domain_create.yml --tags virtual_machines -K
 
 - name: setup the libvirt hosts for libvirt automation
   hosts: libvirt_hosts
@@ -19,6 +19,13 @@
   roles:
   - ericzolf.libvirt_automated.domain_create
   post_tasks:
-  - name: output ansible_host variable
+  - name: refresh inventory after creation/start of VMs
+    meta: refresh_inventory
+  - name: output some variables to check proper inventory
     debug:
-      var: ansible_host
+      var: "{{ item }}"
+    loop:
+    - ansible_host
+    - libvirt_inv_name
+    - libvirt_inv_title
+    - libvirt_inv_description
