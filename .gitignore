@@ -4,3 +4,6 @@
 # backup and working files of vim
 *~
 .*.swp 
+
+# Python stuff
+__pycache__

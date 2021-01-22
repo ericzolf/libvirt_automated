@@ -42,6 +42,7 @@
   wait_for_connection:
   vars:
     ansible_password: "{{ virt_dom_os_password }}"
+    ansible_ssh_extra_args: "-o StrictHostKeyChecking=no"
   become: false
   when:
   - libvirt_host == "localhost" or libvirt_host == "127.0.0.1"
