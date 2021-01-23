@@ -45,12 +45,9 @@ DOCUMENTATION = '''
 #    extends_documentation_fragment:
 #        - inventory_cache
 
-import argparse
-import json
 import libvirt
-import pdb
-import os
 import re
+import yaml
 
 from ansible.plugins.inventory import BaseInventoryPlugin
 
@@ -87,12 +84,12 @@ class InventoryModule(BaseInventoryPlugin):
         take_ip = self.get_option('take_ip')
 
         conn = libvirt.open(self.get_option('uri'))
-        domains = conn.listAllDomains()
+        # TODO inactive VMs are more difficult to handle so we'll improve later
+        domains = conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
 
         #parse data and create inventory objects:
         for dom in domains:
-            if dom.isActive() and (vm_filter is None
-                                   or re.search(vm_filter, dom.name())):
+            if (not vm_filter) or re.search(vm_filter, dom.name()):
                 host_name = self.dns_invalid_pattern.sub("", dom.name())
                 self.inventory.add_host(host_name)
                 self.inventory.set_variable(host_name, var_prefix + 'title',
