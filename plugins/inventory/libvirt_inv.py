@@ -18,12 +18,27 @@ DOCUMENTATION = '''
         description: the name of this plugin, it should always be set to 'ericzolf.libvirt_automated.libvirt_inv' for this plugin to recognize it as it's own.
         required: True
         choices: ['ericzolf.libvirt_automated.libvirt_inv']
-      url:
-        description: url to foreman
-        default: 'http://localhost:3000'
+      uri:
+        description: URI to libvirt end-point
+        default: 'qemu:///system'
         env:
-            - name: FOREMAN_SERVER
-              version_added: "2.8"
+            - name: LIBVIRT_INV_URI
+      filter:
+        description: filter on acceptable VMs' name, in form of a Python regex
+        alias: vm_filter
+        env:
+            - name: LIBVIRT_INV_VM_FILTER
+      prefix:
+        description: prefix for the variables created by this inventory plug-in
+        default: 'libvirt_'
+        alias: var_prefix
+        env:
+            - name: LIBVIRT_INV_VAR_PREFIX
+      take_ip:
+        description: take the first IP address as ansible_host variable
+        default: true
+        env:
+            - name: LIBVIRT_INV_TAKE_IP
 '''
 
 # TODO add the following line before options in documentation if adding cache support
@@ -43,6 +58,8 @@ class InventoryModule(BaseInventoryPlugin):
 
     NAME = 'ericzolf.libvirt_automated.libvirt_inv'  # used internally by Ansible, it should match the file name
 
+    dns_invalid_pattern = re.compile("[^a-zA-Z0-9.-].*")   # everything after the first invalid character
+
     def verify_file(self, path):
         ''' return true/false if this is possibly a valid file for this plugin to consume '''
         valid = False
@@ -54,89 +71,35 @@ class InventoryModule(BaseInventoryPlugin):
 
     def parse(self, inventory, loader, path, cache=True):
 
-         # call base method to ensure properties are available for use with other helper methods
-         super(InventoryModule, self).parse(inventory, loader, path, cache)
+        # call base method to ensure properties are available for use with other helper methods
+        super(InventoryModule, self).parse(inventory, loader, path, cache)
 
-         # this method will parse 'common format' inventory sources and
-         # update any options declared in DOCUMENTATION as needed
-         config = self._read_config_data(path)
+        # this method will parse 'common format' inventory sources and
+        # update any options declared in DOCUMENTATION as needed
+        config = self._read_config_data(path)
 
-         # if NOT using _read_config_data you should call set_options directly,
-         # to process any defined configuration for this plugin,
-         # if you don't define any options you can skip
-         #self.set_options()
+        # if NOT using _read_config_data you should call set_options directly,
+        # to process any defined configuration for this plugin,
+        # if you don't define any options you can skip
+        #self.set_options()
+        vm_filter = self.get_option('filter')
+        var_prefix = self.get_option('prefix')
+        take_ip = self.get_option('take_ip')
 
-         # example consuming options from inventory source
-         mysession = apilib.session(user=self.get_option('api_user'),
-                                    password=self.get_option('api_pass'),
-                                    server=self.get_option('api_server')
-         )
+        conn = libvirt.open(self.get_option('uri'))
+        domains = conn.listAllDomains()
 
-
-         # make requests to get data to feed into inventory
-         mydata = mysession.getitall()
-
-         #parse data and create inventory objects:
-         for colo in mydata:
-             for server in mydata[colo]['servers']:
-                 self.inventory.add_host(server['name'])
-                 self.inventory.set_variable(server['name'], 'ansible_host', server['external_ip'])
-
-class Inventory(object):
-
-    def __init__(self):
-        self.parse_cli_args()
-        # filter on the name of the VMs present in libvirt
-        self.vm_filter = os.environ.get('LIBVIRT_INV_VM_FILTER', None)
-        # prefix for created host variables in the inventory
-        self.var_prefix = os.environ.get('LIBVIRT_INV_VAR_PREFIX',
-                                         'libvirt_inv_')
-        # URI to connect to libvirt
-        self.connection_uri = os.environ.get('LIBVIRT_INV_URI',
-                                             'qemu:///system')
-
-        self.inventory = {"_meta": {"hostvars": {}}}
-        self.conn = libvirt.open(self.connection_uri)
-
-        if self.args.list:
-            self.handle_list()
-        else:
-            self.inventory = self.inventory
-
-        print(json.dumps(self.inventory))
-
-    def handle_list(self):
-        groups = {}
-        hosts = []
-
-        domains = self.conn.listAllDomains()
-
+        #parse data and create inventory objects:
         for dom in domains:
-            if dom.isActive() and (self.vm_filter is None or
-                                   re.match(self.vm_filter, dom.name())):
-                # get rid of prefix until last underscore,
-                # which is not allowed in DNS hostnames
-                name = re.sub("^.*_", "", dom.name())
-                title = dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None)
-                description = dom.metadata(
-                    libvirt.VIR_DOMAIN_METADATA_DESCRIPTION, None)
-                dev = list(dom.interfaceAddresses(0))[0]
-                device_ip = dom.interfaceAddresses(0)[dev]['addrs'][0]['addr']
-
-                hosts.append(name)
-                self.inventory["_meta"]["hostvars"].update({name: {
-                                   'ansible_host': device_ip,
-                                   self.var_prefix + 'title': title,
-                                   self.var_prefix + 'description': description
-                                }})
-
-        self.inventory.update({'libvirt': {'hosts': hosts, 'vars': {}}})
-
-    def parse_cli_args(self):
-        parser = argparse.ArgumentParser(
-                    description='Produce an Ansible Inventory from a file')
-        parser.add_argument('--list', action='store_true', help='List Hosts')
-        self.args = parser.parse_args()
-
-
-Inventory()
+            if dom.isActive() and (vm_filter is None
+                                   or re.search(vm_filter, dom.name())):
+                host_name = self.dns_invalid_pattern.sub("", dom.name())
+                self.inventory.add_host(host_name)
+                self.inventory.set_variable(host_name, var_prefix + 'title',
+                                            dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None))
+                self.inventory.set_variable(host_name, var_prefix + 'description',
+                                            dom.metadata(libvirt.VIR_DOMAIN_METADATA_DESCRIPTION, None))
+                if take_ip and dom.interfaceAddresses(0):  # 0 is the source
+                    dev = dom.interfaceAddresses(0).keys()[0]  # take the first device
+                    device_ip = dom.interfaceAddresses(0)[dev]['addrs'][0]['addr']
+                    self.inventory.set_variable(host_name, 'ansible_host', str(device_ip))

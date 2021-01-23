@@ -1,1 +1,0 @@
-../../plugins/inventory/libvirt_inv.py

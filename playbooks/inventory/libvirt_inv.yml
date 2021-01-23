@@ -1,0 +1,3 @@
+---
+plugin: ericzolf.libvirt_automated.libvirt_inv
+filter: test
