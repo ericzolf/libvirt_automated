@@ -4,7 +4,7 @@
 libvirt_connect: "qemu:///system"
 libvirt_host: localhost
 
-virt_dom_name: "{{ inventory_hostname_short }}"
+virt_dom_name: "ansible_{{ inventory_hostname }}"
 
 virt_dom_state: destroyed  # or shutdown ?
 
