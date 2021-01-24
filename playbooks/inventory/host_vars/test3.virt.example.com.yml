@@ -15,7 +15,7 @@ virt_dom_os_file_systems:
   label: ROOTFS
 - mount: /var
   type: xfs
-  name: Home
+  name: Var
   size: 20480
   maxsize: "{{ (virt_dom_disk_size | int * 1024 / 2) | int }}"  # we try to keep some disk space free
   label: VARFS

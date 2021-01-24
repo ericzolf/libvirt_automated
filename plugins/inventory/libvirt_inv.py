@@ -13,6 +13,9 @@ DOCUMENTATION = '''
     description:
         - Get inventory hosts from the libvirtd service.
         - "Uses a configuration file as an inventory source, it must end in ``libvirt_inv.yml``, ``libvirt_inv.yaml``, ``libvirt.yml`` or ``libvirt.yaml`` and has a ``plugin: ericzolf.libvirt_automated.libvirt_inv`` entry."
+        - The name of the domain will be used as hostname after having being stripped of any non valid prefix like one ending with an underscore.
+        - "Description fields looking like YAML/JSON, i.e. enclosed with '---'/'...' resp. '{'/'}' will be interpreted as YAML (JSON being a subset of it), and the found key/value pairs loaded as variables."
+        - "If the interpretation as YAML fails, the error will be ignored and the description loaded as variable."
     options:
       plugin:
         description: the name of this plugin, it should always be set to 'ericzolf.libvirt_automated.libvirt_inv' for this plugin to recognize it as it's own.
@@ -23,17 +26,20 @@ DOCUMENTATION = '''
         default: 'qemu:///system'
         env:
             - name: LIBVIRT_INV_URI
-      filter:
-        description: filter on acceptable VMs' name, in form of a Python regex
-        alias: vm_filter
+      dom_filter:
+        description: filter on acceptable VMs' (aka domain) name, in form of a Python regex
         env:
-            - name: LIBVIRT_INV_VM_FILTER
-      prefix:
+            - name: LIBVIRT_INV_DOM_FILTER
+      var_prefix:
         description: prefix for the variables created by this inventory plug-in
         default: 'libvirt_'
-        alias: var_prefix
         env:
             - name: LIBVIRT_INV_VAR_PREFIX
+      prefix_desc_vars:
+        description: shall the variables discovered in the description field interpreted as YAML be prefixed
+        default: false
+        env:
+            - name: LIBVIRT_INV_PREFIX_DESC_VARS
       take_ip:
         description: take the first IP address as ansible_host variable
         default: true
@@ -60,7 +66,7 @@ class InventoryModule(BaseInventoryPlugin):
 
     NAME = 'ericzolf.libvirt_automated.libvirt_inv'  # used internally by Ansible, it should match the file name
 
-    dns_invalid_pattern = re.compile("[^a-zA-Z0-9.-].*")   # everything after the first invalid character
+    dns_invalid_pattern = re.compile(".*[^a-zA-Z0-9.-]")   # everything before the first invalid character
 
     def verify_file(self, path):
         ''' return true/false if this is possibly a valid file for this plugin to consume '''
@@ -80,14 +86,13 @@ class InventoryModule(BaseInventoryPlugin):
         # update any options declared in DOCUMENTATION as needed
         config = self._read_config_data(path)
 
-        # if NOT using _read_config_data you should call set_options directly,
-        # to process any defined configuration for this plugin,
-        # if you don't define any options you can skip
-        #self.set_options()
-        vm_filter = self.get_option('filter')
-        var_prefix = self.get_option('prefix')
+        # grab a few options
+        dom_filter = self.get_option('dom_filter')
+        var_prefix = self.get_option('var_prefix')
+        prefix_desc_vars = self.get_option('prefix_desc_vars')
         take_ip = self.get_option('take_ip')
 
+        # open the connection to libvirt and get all domains/VMs
         conn = libvirt.open(self.get_option('uri'))
         # TODO inactive VMs are more difficult to handle so we'll improve later
         domains = conn.listAllDomains(libvirt.VIR_CONNECT_LIST_DOMAINS_ACTIVE)
@@ -97,8 +102,8 @@ class InventoryModule(BaseInventoryPlugin):
 
         #parse data and create inventory objects:
         for dom in domains:
-            if (not vm_filter) or re.search(vm_filter, dom.name()):
-                host_name = self.dns_invalid_pattern.sub("", dom.name())
+            if (not dom_filter) or re.search(dom_filter, dom.name()):
+                host_name = self.dns_invalid_pattern.sub('', dom.name())
                 self.inventory.add_host(host_name)
                 # metadata fails if the requested metadata doesn't exist
                 try:
@@ -106,12 +111,23 @@ class InventoryModule(BaseInventoryPlugin):
                                                 dom.metadata(libvirt.VIR_DOMAIN_METADATA_TITLE, None))
                 except libvirt.libvirtError:
                     pass
+                # we try to interpret the description as a YAML/JSON field if it looks like one
                 try:
-                    self.inventory.set_variable(host_name, var_prefix + 'description',
-                                                dom.metadata(libvirt.VIR_DOMAIN_METADATA_DESCRIPTION, None))
+                    dom_description = dom.metadata(libvirt.VIR_DOMAIN_METADATA_DESCRIPTION, None)
+                    if ((dom_description.startswith('---') and dom_description.endswith('...'))
+                            or (dom_description.startswith('{') and dom_description.endswith('}'))):
+                        try:
+                            for var, value in yaml.safe_load(dom_description).items():
+                                if prefix_desc_vars:
+                                    var = var_prefix + var
+                                self.inventory.set_variable(host_name, var, value)
+                        except yaml.parser.ParserError:
+                            self.inventory.set_variable(host_name, var_prefix + 'description', dom_description)
+                    else:
+                        self.inventory.set_variable(host_name, var_prefix + 'description', dom_description)
                 except libvirt.libvirtError:
                     pass
                 if take_ip and dom.interfaceAddresses(0):  # 0 is the source
-                    dev = dom.interfaceAddresses(0).keys()[0]  # take the first device
-                    device_ip = dom.interfaceAddresses(0)[dev]['addrs'][0]['addr']
+                    dev = list(dom.interfaceAddresses(0))[0]  # take the first device
+                    device_ip = dom.interfaceAddresses(0)[dev]['addrs'][0]['addr']  # take the first address
                     self.inventory.set_variable(host_name, 'ansible_host', str(device_ip))

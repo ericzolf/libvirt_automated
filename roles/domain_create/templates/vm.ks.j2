@@ -22,7 +22,7 @@ repo --name="AppStream" --baseurl=file:///run/install/repo/AppStream
 {% endif %}
 # Root password
 rootpw --{{ virt_dom_os_password_crypted | ternary('iscrypted', 'plaintext')}} {{ virt_dom_os_password }}
-user --groups=wheel --name={{ ansible_user | default(lookup('env', 'USERNAME')) }} --password={{ virt_dom_os_password }} --{{ virt_dom_os_password_crypted | ternary('iscrypted', 'plaintext')}} --gecos="Ansible User"
+user --groups=wheel --name={{ ansible_user | default(lookup('env', 'USER')) }} --password={{ virt_dom_os_password }} --{{ virt_dom_os_password_crypted | ternary('iscrypted', 'plaintext')}} --gecos="Ansible User"
 # Run the Setup Agent on first boot
 firstboot --disable
 # Do not configure the X Window System

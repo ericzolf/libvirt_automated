@@ -6,8 +6,10 @@ libvirt_host: localhost
 libvirt_type: "kvm"
 libvirt_temp_dir: "/var/tmp/libvirt"
 
-virt_dom_name: "{{ inventory_hostname_short }}"
-virt_dom_title: "{{ inventory_hostname }}"
+# the prefix will be removed by the inventory plug-in to re-create the inventory hostname
+# make sure that the name is fit as filename (without blanks)
+virt_dom_name: "ansible_{{ inventory_hostname }}"
+virt_dom_title: "Ansible created - {{ inventory_hostname_short }}"
 virt_dom_description: "default domain description - replace me"
 
 virt_dom_ram_mb: "1024"

@@ -1,3 +1,6 @@
 ---
 plugin: ericzolf.libvirt_automated.libvirt_inv
-#filter: test
+dom_filter: '^ansible_'
+prefix_desc_vars: true
+#var_prefix: ''
+#take_ip: false

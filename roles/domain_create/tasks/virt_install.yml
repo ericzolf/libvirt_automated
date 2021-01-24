@@ -1,32 +1,38 @@
 ---
 
 - name: call virt-install with all defined parameters
-  command: >
-    virt-install
-    --name "{{ virt_dom_name }}"
-    --metadata title="{{ virt_dom_title }}",description="{{ virt_dom_description }}"
+  command:
+    argv:
+      - virt-install
+      - --name={{ virt_dom_name }}
+      - --metadata
+      - title={{ virt_dom_title|quote }},description={{ virt_dom_description|quote }}
 
-    --ram {{ virt_dom_ram_mb }}
-    --vcpus {{ virt_dom_vcpus }}
-    --cpu {{ virt_dom_cpu_type }}
+      - --ram={{ virt_dom_ram_mb }}
+      - --vcpus={{ virt_dom_vcpus }}
+      - --cpu={{ virt_dom_cpu_type }}
 
-    --disk pool={{ virt_dom_disk_pool }},bus={{ virt_dom_disk_bus }},size={{ virt_dom_disk_size }},sparse=yes
-    --controller {{ virt_dom_disk_controller }}
+      - --disk
+      - pool={{ virt_dom_disk_pool }},bus={{ virt_dom_disk_bus }},size={{ virt_dom_disk_size }},sparse=yes
+      - --controller={{ virt_dom_disk_controller }}
 
-    --network network={{ virt_dom_network_name }}
+      - --network
+      - network={{ virt_dom_network_name }}
 
-    --location {{ virt_dom_os_iso }}
-    --os-type {{ virt_dom_os_type }}
-    --os-variant {{ virt_dom_os_variant }}
-    --initrd-inject={{ virt_dom_os_ks_path }}
-    --extra-args "ks=file:/{{ virt_dom_os_kickstart | basename }} console=ttyS0,115200"
+      - --location={{ virt_dom_os_iso }}
+      - --os-type={{ virt_dom_os_type }}
+      - --os-variant={{ virt_dom_os_variant }}
+      - --initrd-inject={{ virt_dom_os_ks_path }}
+      - --extra-args
+      - ks=file:/{{ virt_dom_os_kickstart | basename }}  # console=ttyS0,115200
 
-    --accelerate
-    --graphics none
-    --boot useserial=on
-    --rng /dev/random
-    --noautoconsole
-    --wait
+      - --accelerate
+        #      - --graphics=none
+        #- --boot
+        #      - useserial=on
+      - --rng=/dev/random
+      - --noautoconsole
+      - --wait
 
   delegate_to: "{{ libvirt_host }}"
 

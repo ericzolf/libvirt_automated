@@ -23,20 +23,7 @@
   delegate_to: "{{ libvirt_host }}"
 
 - name: gather IP information of the created VM
-  command: virsh --quiet domifaddr {{ virt_dom_name }}
-  changed_when: false
-  register: vir_domifaddr
-  delegate_to: "{{ libvirt_host }}"
-
-- name: extract the IP address of the VM and set ansible_host
-  set_fact:
-    # format is 'vnet0      52:54:00:d8:42:06    ipv4         192.168.122.223/24'
-    ansible_host: "{{ vir_domifaddr.stdout_lines[0].split()[-1] | ipaddr('address') }}"
-
-- name: fail if ansible_host isn't properly defined
-  fail:
-    msg: "Variable ansible_host isn't properly defined"
-  when: not ansible_host
+  meta: refresh_inventory
 
 - name: wait for host to be available (if libvirt host is localhost)
   wait_for_connection:

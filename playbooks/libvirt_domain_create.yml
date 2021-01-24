@@ -26,6 +26,6 @@
       var: "{{ item }}"
     loop:
     - ansible_host
-    - libvirt_inv_name
-    - libvirt_inv_title
-    - libvirt_inv_description
+    - libvirt_title
+    - libvirt_description
+    - libvirt_index
