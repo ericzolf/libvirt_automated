@@ -1,6 +1,10 @@
 ---
 # tasks file for libvirt_setup
 
+- name: gather necessary facts if not already done
+  ansible.builtin.setup:
+    gather_subset: "!all,!min,pkg_mgr,service_mgr"
+  when: ansible_pkg_mgr is not defined or ansible_service_mgr is not defined
 - name: install required packages to setup the libvirt host
   package:
     name: "{{ libvirt_host_packages }}"
