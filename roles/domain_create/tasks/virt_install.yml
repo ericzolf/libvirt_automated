@@ -24,7 +24,7 @@
       - --os-variant={{ virt_dom_os_variant }}
       - --initrd-inject={{ virt_dom_os_ks_path }}
       - --extra-args
-      - ks=file:/{{ virt_dom_os_kickstart | basename }}  # console=ttyS0,115200
+      - inst.ks=file:/{{ virt_dom_os_kickstart | basename }}  # console=ttyS0,115200
 
       - --accelerate
         #      - --graphics=none
