@@ -1,7 +1,8 @@
-#version=RHEL8
+{% set rhel_major = virt_dom_os_variant | ansible.builtin.regex_replace('^rhel(\\d*).*$', '\\1') | int %}
+#version=RHEL{{ rhel_major }}
 ignoredisk --only-use={{ virt_dom_disk_name }}
 # System bootloader configuration
-bootloader --append=" crashkernel=auto" --location=mbr --boot-drive={{ virt_dom_disk_name }}
+bootloader {% if rhel_major < 10 %}--append=" crashkernel=auto" {% endif %}--location=mbr --boot-drive={{ virt_dom_disk_name }}
 # Partition clearing information
 clearpart --none --initlabel
 # Use text or graphical install
@@ -17,7 +18,7 @@ lang en_US.UTF-8
 network  --bootproto=dhcp --device=link --ipv6=auto --activate
 network  --hostname="{{ virt_dom_os_hostname }}"
 
-{% if 'rhel8' in virt_dom_os_variant %}
+{% if rhel_major == 8 %}
 repo --name="AppStream" --baseurl=file:///run/install/repo/AppStream
 {% endif %}
 # Root password
@@ -30,11 +31,16 @@ skipx
 # System services
 services --enabled="chronyd"
 # System timezone
-timezone Etc/GMT --isUtc
+timezone Etc/GMT {% if rhel_major < 9 %}--isUtc{% else %}--utc{%endif%}
+
 # Disk partitioning information
 part pv.{{ virt_dom_os_fs }} --fstype="lvmpv" --ondisk={{ virt_dom_disk_name }} --size=500 --grow
-part /boot --fstype="xfs" --ondisk={{ virt_dom_disk_name }} --size=1024 --label=BOOTFS
-#part /boot/efi --fstype=efi --size=600 --fsoptions="umask=0077,shortname=winnt"
+part /boot --fstype="ext4" --ondisk={{ virt_dom_disk_name }} --size=1024 --label=BOOTFS
+{% if virt_dom_uefi %}
+part /boot/efi --fstype=efi --size=600 --fsoptions="umask=0077,shortname=winnt"
+{% else %}
+part biosboot --fstype biosboot --size 1
+{% endif %}
 volgroup rhel --pesize=4096 pv.{{ virt_dom_os_fs }}
 logvol swap --fstype="swap" --recommended --name=swap --vgname=rhel
 {% for fs in virt_dom_os_file_systems %}
@@ -49,27 +55,27 @@ firewall --enabled --service=ssh
 selinux --enforcing
 
 %packages
-{% if 'rhel8' in virt_dom_os_variant %}
-@^minimal-environment
-{% elif 'rhel7' in virt_dom_os_variant %}
+{% if rhel_major <= 7 %}
 @^minimal
 @core
 chrony
+{% else %}
+@^minimal-environment
 {% endif %}
 kexec-tools
 
 %end
 
+{% if rhel_major < 10 %}
 %addon com_redhat_kdump --enable --reserve-mb='auto'
 
 %end
 
-# post-install not required for now...
-#%post
-#%end
-
+{% if rhel_major < 9 %}
 %anaconda
 pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
 pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
 pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
 %end
+{% endif %}
+{% endif %}

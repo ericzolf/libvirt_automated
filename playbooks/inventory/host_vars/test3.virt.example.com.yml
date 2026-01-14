@@ -1,11 +1,11 @@
 ---
 # variables file for test3
-virt_dom_description: third example host RHEL 8
+virt_dom_description: third example host RHEL 9
 virt_dom_ram_mb: 2048
 virt_dom_disk_size: 50
 
-virt_dom_os_variant: "rhel8.2"
-virt_dom_os_iso: "/var/lib/libvirt/images/rhel-8.2-x86_64-dvd.iso"
+virt_dom_os_variant: "rhel9.6"
+virt_dom_os_iso: "/var/lib/libvirt/images/rhel-9.6-x86_64-dvd.iso"
 
 virt_dom_os_file_systems:
 - mount: /

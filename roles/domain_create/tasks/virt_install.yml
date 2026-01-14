@@ -19,8 +19,7 @@
       - --network
       - network={{ virt_dom_network_name }}
 
-      - --location={{ virt_dom_os_iso }}
-      - --os-type={{ virt_dom_os_type }}
+      - --location={{ virt_dom_os_iso }}{{ virt_dom_os_paths }}
       - --os-variant={{ virt_dom_os_variant }}
       - --initrd-inject={{ virt_dom_os_ks_path }}
       - --extra-args
@@ -28,7 +27,8 @@
 
       - --accelerate
         #      - --graphics=none
-        #- --boot
+      - --boot
+      - uefi={{ virt_dom_uefi | ansible.builtin.ternary('on', 'off') }}
         #      - useserial=on
       - --rng=/dev/random
       - --noautoconsole

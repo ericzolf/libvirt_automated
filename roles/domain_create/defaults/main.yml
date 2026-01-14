@@ -14,7 +14,7 @@ virt_dom_description: "default domain description - replace me"
 
 virt_dom_ram_mb: "1024"
 virt_dom_vcpus: "2"
-virt_dom_cpu_type: "host"
+virt_dom_cpu_type: "host-model"
 
 virt_dom_disk_size: "10"
 virt_dom_disk_pool: "default"
@@ -28,9 +28,11 @@ virt_dom_network_model: "virtio"
 virt_dom_network_type: "direct"
 virt_dom_network_mac: "52:54:00:af:bb:59"
 
-virt_dom_os_type: "Linux"
-virt_dom_os_variant: "rhel7.9"
-virt_dom_os_iso: "/var/lib/libvirt/images/rhel-server-7.9-x86_64-dvd.iso"
+virt_dom_uefi: true
+
+virt_dom_os_variant: "rhel10-unknown"
+virt_dom_os_iso: "/var/lib/libvirt/images/rhel-10.1-x86_64-dvd.iso"
+virt_dom_os_paths: ",initrd=images/pxeboot/initrd.img,kernel=images/pxeboot/vmlinuz"
 virt_dom_os_kickstart: "vm.ks" # .j2 will be used as template
 
 virt_dom_os_hostname: "{{ inventory_hostname }}"
